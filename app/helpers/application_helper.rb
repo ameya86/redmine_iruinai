@@ -2,20 +2,23 @@ module ApplicationHelper
   # 出席数をバーで表示する
   def show_iruinai_bar(project = @project)
     (iru_value, total_value) = iruinai_count(project.id)
-    return progress_bar_with_iruinai(100 * iru_value / total_value, :legend => "#{iru_value}/#{total_value}")
+    percent = (iru_value > 0 && total_value > 0)? 100 * iru_value / total_value : 0
+
+    return progress_bar_with_iruinai(percent, :legend => "#{iru_value}/#{total_value}")
   end
 
   # 出席率を計算する
   def iruinai_count(project_id)
     ut = User.table_name
     mt = Member.table_name
+    # プロジェクトメンバーの設定を取得する
     last_accesses = UserPreference.find(:all, :select => 'p.id, p.others',
               :joins => "as p left join users as u on u.id = p.user_id left join #{mt} as m on p.user_id = m.user_id",
               :conditions => ["u.type = ? and m.project_id = ?", 'User', project_id])
     # 最終ログイン日時が今日のユーザを数えて返す
     now = Date.today
     return last_accesses.count do |access|
-      now.strftime('%Y%m%d') == access[:last_access_on].strftime('%Y%m%d')
+      access[:last_access_on] && now.strftime('%Y%m%d') == access[:last_access_on].strftime('%Y%m%d')
     end, last_accesses.size
   end
 
