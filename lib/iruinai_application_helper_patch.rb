@@ -1,9 +1,10 @@
+require_dependency 'application_helper'
+
 module ApplicationHelper
   # 出席数をバーで表示する
   def show_iruinai_bar(project = @project)
     (iru_value, total_value) = iruinai_count(project.id)
     percent = (iru_value > 0 && total_value > 0)? 100 * iru_value / total_value : 0
-
     return progress_bar_with_iruinai(percent, :legend => "#{iru_value}/#{total_value}")
   end
 
@@ -12,13 +13,13 @@ module ApplicationHelper
     ut = User.table_name
     mt = Member.table_name
     # プロジェクトメンバーの設定を取得する
-    last_accesses = UserPreference.find(:all, :select => 'p.id, p.others',
-              :joins => "as p left join users as u on u.id = p.user_id left join #{mt} as m on p.user_id = m.user_id",
-              :conditions => ["u.type = ? and m.project_id = ?", 'User', project_id])
+    last_accesses = User.find(:all, :select => "#{ut}.id, #{ut}.last_login_on",
+              :joins => " left join #{mt} as m on #{ut}.id = m.user_id",
+              :conditions => ["m.project_id = ?", project_id])
     # 最終ログイン日時が今日のユーザを数えて返す
     now = Date.today
     return last_accesses.count do |access|
-      access[:last_access_on] && now.strftime('%Y%m%d') == access[:last_access_on].strftime('%Y%m%d')
+      access[:last_login_on] && now.strftime('%Y%m%d') == access[:last_login_on].strftime('%Y%m%d')
     end, last_accesses.size
   end
 
